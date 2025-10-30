@@ -1,3 +1,4 @@
+# TODO move to tools/helper.py
 import cv2
 import numpy as np
 import os
@@ -103,7 +104,7 @@ class _VideoHelper(_BaseHelper):
     def get_silence_frames(self, nframes):
         if not hasattr(self, 'silence_exp_idx'):
             embs = self.encode_wav(self._silence_wav)
-            silence_exp_idx = self.search_frames.find_exp(embs)[0]
+            silence_exp_idx = self.search_frames.find_exp_idx(embs)[0]
             self.silence_exp_idx = silence_exp_idx
         exp_idx_seq = [self.silence_exp_idx for _ in range(nframes)]
         yield from self.search_frames.frame_loader(exp_idx_seq=exp_idx_seq, motion_idx=self._nframes)

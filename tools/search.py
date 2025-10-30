@@ -6,7 +6,7 @@ from functools import partial
 from PIL import Image
 from tqdm import tqdm
 
-from tools.common import load_exp_embs
+from tools.common import load_emb2exp_map
 from model.hparams import hparams as hp
 
 
@@ -26,14 +26,14 @@ class SearchFramesByAudioSegment(object):
                  ):
         assert os.path.exists(cluster_path), f"Missing file: {cluster_path}"
 
-        self.exp_embs_tensor = torch.tensor(load_exp_embs(cluster_path), dtype=torch.float32)
-        self.exp_num = self.exp_embs_tensor.shape[0]
+        aud_embs, self.exps, self.emb2exp = load_emb2exp_map(cluster_path)
+        self.tar_aud_embs = torch.tensor(aud_embs, dtype=torch.float32).reshape(-1, 512)
         self.fps = hp.fps
         self.batch_size = batch_size
         self.frame_loader = self._init_frame_loader(src_dir)
 
     def __call__(self, aud_embs, motion_idx):
-        exp_idx_seq = self.find_exp(aud_embs)
+        exp_idx_seq = self.find_exp_idx(aud_embs)
         yield from self.frame_loader(exp_idx_seq=exp_idx_seq, motion_idx=motion_idx)
 
     def _init_frame_loader(self, src_dir):
@@ -43,16 +43,21 @@ class SearchFramesByAudioSegment(object):
             cap.release()
             frame_loader = partial(_load_frames_from_videos, src_dir=src_dir, round_size=round_size)
         else:
-            round_size = len([f for f in os.listdir(src_dir)]) // self.exp_num
+            round_size = len([f for f in os.listdir(src_dir)]) // self.tar_aud_embs.shape[0]
             frame_loader = partial(_load_frames_from_images, src_dir=src_dir, round_size=round_size)
         return frame_loader
 
-    def find_exp(self, audio_embs):
+    def find_exp_idx(self, aud_embs):
         with torch.no_grad():
-            audio_embs_tensor = torch.tensor(audio_embs, device='cpu', dtype=torch.float32)
-            distances = torch.cdist(audio_embs_tensor, self.exp_embs_tensor, compute_mode='donot_use_mm_for_euclid_dist')
-            exp_idx_seq = torch.topk(distances, 1, largest=False, sorted=False, dim=1).indices.squeeze()
+            aud_embs = torch.tensor(aud_embs, device='cpu', dtype=torch.float32)
+            dist = torch.cdist(aud_embs, self.tar_aud_embs, compute_mode='donot_use_mm_for_euclid_dist')
+            emb_idx_seq = torch.topk(dist, 1, largest=False, sorted=False, dim=1).indices.squeeze()
+            exp_idx_seq = self.emb2exp[emb_idx_seq]
         return list(exp_idx_seq)
+    
+    def find_exp(self, aud_embs):
+        exp_idx_seq = self.find_exp_idx(aud_embs)
+        return self.exps[exp_idx_seq]
 
 
 def _load_frames_from_images(src_dir, exp_idx_seq, motion_idx, round_size):

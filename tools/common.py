@@ -75,10 +75,9 @@ def load_model_paths(cfg_path):
     return download_urls, save_paths
 
 
-def load_exp_embs(npz_path):
-    exp_embs = np.load(npz_path)['audio_embeddings']
-    exp_embs = np.concatenate(exp_embs, axis=0).reshape(-1, 512)
-    return exp_embs
+def load_emb2exp_map(npz_path):
+    data = np.load(npz_path, allow_pickle=True)
+    return data['embs'], data['exps'], data['emb2exp']
 
 
 def create_logger(name, level=logging.DEBUG, when='D', backCount=30, log_root=None,

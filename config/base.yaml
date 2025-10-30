@@ -1,5 +1,5 @@
 
-download_home: http://resource.friendochat.com/algo
+download_home: None
 data_root: data  # 存放数据的根目录，数据包括：预训练模型、训练和测试数据、保存模型
 
 pre_trained_model:
@@ -13,11 +13,5 @@ pre_trained_model:
         FR: weights/wav2emb_fr.onnx
         JA: weights/wav2emb_ja.onnx
     clusters:
-        ZH: weights/clustered_audio_lip_exps_zh.npy
-        EN: weights/clustered_audio_lip_exps_en.npy
-        RU: weights/clustered_audio_lip_exps_ru.npy
-        PT: weights/clustered_audio_lip_exps_pt.npy
-        ES: weights/clustered_audio_lip_exps_es.npy
-        AR: weights/clustered_audio_lip_exps_ar.npy
-        FR: weights/clustered_audio_lip_exps_fr.npy
-        JA: weights/clustered_audio_lip_exps_ja.npy
+        ZH: weights/emb2exp_zh_1024c.npz
+
